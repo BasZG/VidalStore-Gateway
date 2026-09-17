@@ -154,6 +154,22 @@ async function iniciarBffFalso(): Promise<Destino> {
       return;
     }
 
+    if (authorization === 'Bearer error-texto') {
+      res.statusCode = 418;
+      res.setHeader(
+        'Content-Type',
+        'text/plain; charset=utf-8',
+      );
+      res.end('Error upstream en texto');
+      return;
+    }
+
+    if (authorization === 'Bearer error-vacio') {
+      res.statusCode = 404;
+      res.end();
+      return;
+    }
+
     const body = await leerBody(req);
 
     res.statusCode = req.method === 'POST' ? 201 : 200;
@@ -355,6 +371,24 @@ describe('Gateway forwarding (e2e)', () => {
       statusCode: 422,
       message: 'Error del BFF',
     });
+  });
+
+  it('conserva status y cuerpo de texto del BFF', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/v1/catalogo')
+      .set('Authorization', 'Bearer error-texto')
+      .expect(418);
+
+    expect(response.text).toBe('Error upstream en texto');
+  });
+
+  it('conserva status y cuerpo vacio del BFF', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/v1/catalogo')
+      .set('Authorization', 'Bearer error-vacio')
+      .expect(404);
+
+    expect(response.text).toBe('');
   });
 
   it('timeout del BFF devuelve 504', async () => {

@@ -45,6 +45,7 @@ describe('ProxyService', () => {
         method: 'GET',
         url: 'http://localhost:3001/v1/catalogo',
         timeout: 3000,
+        validateStatus: expect.any(Function),
         headers: {
           Authorization: 'Bearer token',
         },
@@ -96,43 +97,69 @@ describe('ProxyService', () => {
     expect(resultado.status).toBe(201);
   });
 
-  it.each([400, 401, 403, 404, 500])(
-    'debe conservar error HTTP %i recibido desde el BFF',
-    async (codigo) => {
-      const respuestaError = {
-        statusCode: codigo,
-        message: `Error ${codigo}`,
-      };
-
+  it.each([
+    {
+      nombre: 'JSON',
+      codigo: 422,
+      data: {
+        statusCode: 422,
+        message: 'Entidad invalida',
+      },
+    },
+    {
+      nombre: 'texto',
+      codigo: 418,
+      data: 'Error upstream en texto',
+    },
+    {
+      nombre: 'vacio',
+      codigo: 404,
+      data: '',
+    },
+  ])(
+    'debe conservar error HTTP con cuerpo $nombre',
+    async ({ codigo, data }) => {
       requestMock.mockReturnValue(
-        throwError(() => ({
-          response: {
-            status: codigo,
-            data: respuestaError,
-          },
-        })),
+        of({
+          status: codigo,
+          data,
+        }),
       );
 
-      try {
-        await service.forward(
-          'http://localhost:3001',
-          '/v1/prueba',
-          'GET',
-        );
+      const resultado = await service.forward(
+        'http://localhost:3001',
+        '/v1/prueba',
+        'GET',
+      );
 
-        throw new Error('La llamada debio fallar');
-      } catch (error) {
-        expect(error).toBeInstanceOf(HttpException);
-
-        const httpError = error as HttpException;
-
-        expect(httpError.getStatus()).toBe(codigo);
-        expect(httpError.getResponse()).toEqual(
-          respuestaError,
-        );
-      }
+      expect(resultado).toEqual({
+        status: codigo,
+        data,
+      });
     },
   );
+
+  it('conserva una respuesta HTTP si Axios la entrega como error', async () => {
+    requestMock.mockReturnValue(
+      throwError(() => ({
+        response: {
+          status: 409,
+          data: 'Conflicto',
+        },
+      })),
+    );
+
+    await expect(
+      service.forward(
+        'http://localhost:3001',
+        '/v1/prueba',
+        'GET',
+      ),
+    ).resolves.toEqual({
+      status: 409,
+      data: 'Conflicto',
+    });
+  });
 
   it('debe devolver 504 cuando ocurre timeout', async () => {
     requestMock.mockReturnValue(

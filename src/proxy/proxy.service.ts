@@ -14,7 +14,7 @@ type UpstreamError = {
   code?: string;
   response?: {
     status: number;
-    data: string | Record<string, unknown>;
+    data: unknown;
   };
 };
 
@@ -40,6 +40,7 @@ export class ProxyService {
       url,
       data,
       timeout: ProxyService.TIMEOUT_MS,
+      validateStatus: () => true,
       headers: {
         ...(authorization
           ? { Authorization: authorization }
@@ -63,10 +64,10 @@ export class ProxyService {
       const axiosError = error as UpstreamError;
 
       if (axiosError.response) {
-        throw new HttpException(
-          axiosError.response.data,
-          axiosError.response.status,
-        );
+        return {
+          status: axiosError.response.status,
+          data: axiosError.response.data,
+        };
       }
 
       if (
