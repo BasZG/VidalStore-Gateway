@@ -79,7 +79,7 @@ export class AppController {
   ) {
     const resultado = await this.proxyService.forward(
       this.bffUrl,
-      `/v1/catalogo/${juegoId}`,
+      `/v1/catalogo/${encodeURIComponent(juegoId)}`,
       'PUT',
       body,
       authorization,
@@ -153,7 +153,7 @@ export class AppController {
   ) {
     const resultado = await this.proxyService.forward(
       this.bffUrl,
-      `/v1/licencias/${licenciaId}`,
+      `/v1/licencias/${encodeURIComponent(licenciaId)}`,
       'DELETE',
       undefined,
       authorization,

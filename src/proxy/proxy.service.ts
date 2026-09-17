@@ -10,8 +10,18 @@ import type {
 } from 'axios';
 import { firstValueFrom } from 'rxjs';
 
+type UpstreamError = {
+  code?: string;
+  response?: {
+    status: number;
+    data: string | Record<string, unknown>;
+  };
+};
+
 @Injectable()
 export class ProxyService {
+  private static readonly TIMEOUT_MS = 3000;
+
   constructor(
     private readonly httpService: HttpService,
   ) {}
@@ -29,6 +39,7 @@ export class ProxyService {
       method,
       url,
       data,
+      timeout: ProxyService.TIMEOUT_MS,
       headers: {
         ...(authorization
           ? { Authorization: authorization }
@@ -48,16 +59,34 @@ export class ProxyService {
         status: response.status,
         data: response.data,
       };
-    } catch (error: any) {
-      if (error.response) {
+    } catch (error: unknown) {
+      const axiosError = error as UpstreamError;
+
+      if (axiosError.response) {
         throw new HttpException(
-          error.response.data,
-          error.response.status,
+          axiosError.response.data,
+          axiosError.response.status,
+        );
+      }
+
+      if (
+        axiosError.code === 'ECONNABORTED' ||
+        axiosError.code === 'ETIMEDOUT'
+      ) {
+        throw new HttpException(
+          {
+            statusCode: HttpStatus.GATEWAY_TIMEOUT,
+            message: 'Gateway Timeout',
+          },
+          HttpStatus.GATEWAY_TIMEOUT,
         );
       }
 
       throw new HttpException(
-        'BFF no disponible',
+        {
+          statusCode: HttpStatus.BAD_GATEWAY,
+          message: 'Bad Gateway',
+        },
         HttpStatus.BAD_GATEWAY,
       );
     }
