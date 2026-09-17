@@ -1,12 +1,13 @@
+import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
-import { HttpModule } from '@nestjs/axios';
-import { JwtStrategy } from './auth/jwt.strategy.js';
 import { AppController } from './app.controller.js';
-import { ProxyService } from './proxy/proxy.service.js';
 import { JwtAuthGuard } from './auth/jwt-auth.guard.js';
+import { JwtStrategy } from './auth/jwt.strategy.js';
+import { RolesGuard } from './auth/roles.guard.js';
 import { ScopesGuard } from './auth/scopes.guard.js';
+import { ProxyService } from './proxy/proxy.service.js';
 
 @Module({
   imports: [
@@ -15,6 +16,12 @@ import { ScopesGuard } from './auth/scopes.guard.js';
     HttpModule,
   ],
   controllers: [AppController],
-  providers: [JwtStrategy, ProxyService, JwtAuthGuard, ScopesGuard],
+  providers: [
+    JwtStrategy,
+    ProxyService,
+    JwtAuthGuard,
+    ScopesGuard,
+    RolesGuard,
+  ],
 })
 export class AppModule {}
