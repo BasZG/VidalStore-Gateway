@@ -1,41 +1,63 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+} from '@nestjs/common';
+import type {
+  AxiosRequestConfig,
+  Method,
+} from 'axios';
 import { firstValueFrom } from 'rxjs';
-import { AxiosRequestConfig, Method } from 'axios';
 
 @Injectable()
 export class ProxyService {
-  constructor(private readonly httpService: HttpService) {}
+  constructor(
+    private readonly httpService: HttpService,
+  ) {}
 
   async forward(
     targetBaseUrl: string,
     path: string,
     method: Method,
-    data?: any,
-    headers?: any,
+    data?: unknown,
+    authorization?: string,
   ) {
     const url = `${targetBaseUrl}${path}`;
-
-    const forwardHeaders = { ...headers };
-    delete forwardHeaders.host;
-    delete forwardHeaders['content-length'];
 
     const config: AxiosRequestConfig = {
       method,
       url,
       data,
-      headers: forwardHeaders,
+      headers: {
+        ...(authorization
+          ? { Authorization: authorization }
+          : {}),
+        ...(data !== undefined
+          ? { 'Content-Type': 'application/json' }
+          : {}),
+      },
     };
 
     try {
-      const response = await firstValueFrom(this.httpService.request(config));
-      return response.data;
+      const response = await firstValueFrom(
+        this.httpService.request(config),
+      );
+
+      return {
+        status: response.status,
+        data: response.data,
+      };
     } catch (error: any) {
       if (error.response) {
-        throw new HttpException(error.response.data, error.response.status);
+        throw new HttpException(
+          error.response.data,
+          error.response.status,
+        );
       }
+
       throw new HttpException(
-        'Microservicio no disponible',
+        'BFF no disponible',
         HttpStatus.BAD_GATEWAY,
       );
     }

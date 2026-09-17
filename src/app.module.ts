@@ -6,6 +6,7 @@ import { JwtStrategy } from './auth/jwt.strategy.js';
 import { AppController } from './app.controller.js';
 import { ProxyService } from './proxy/proxy.service.js';
 import { JwtAuthGuard } from './auth/jwt-auth.guard.js';
+import { ScopesGuard } from './auth/scopes.guard.js';
 
 @Module({
   imports: [
@@ -14,6 +15,6 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard.js';
     HttpModule,
   ],
   controllers: [AppController],
-  providers: [JwtStrategy, ProxyService,JwtAuthGuard],
+  providers: [JwtStrategy, ProxyService, JwtAuthGuard, ScopesGuard],
 })
 export class AppModule {}
