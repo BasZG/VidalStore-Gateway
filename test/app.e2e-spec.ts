@@ -223,8 +223,8 @@ async function cerrarServidor(server: Server): Promise<void> {
  *   -> BFF falso escuchando en un puerto real
  *
  * Los guards se sustituyen para aislar las pruebas
- * de forwarding. La autenticacion real ya se prueba
- * en el bloque anterior.
+ * de forwarding. La autenticacion JWT real se prueba
+ * en security.e2e-spec.ts.
  */
 describe('Gateway forwarding (e2e)', () => {
   let app: INestApplication;
