@@ -431,6 +431,134 @@ describe('Gateway seguridad JWT real (e2e)', () => {
       .expect(403);
   });
 
+  it('asigna jugador por defecto a JWT sin grupos', async () => {
+    const token = firmarToken({
+      'cognito:groups': undefined,
+    });
+
+    await request(app.getHttpServer())
+      .get('/v1/catalogo')
+      .set(
+        'Authorization',
+        `Bearer ${token}`,
+      )
+      .expect(200);
+  });
+
+  it('no concede permisos editoriales a JWT sin grupos', async () => {
+    const token = firmarToken({
+      'cognito:groups': undefined,
+    });
+
+    await request(app.getHttpServer())
+      .post('/v1/catalogo')
+      .set(
+        'Authorization',
+        `Bearer ${token}`,
+      )
+      .send({
+        titulo: 'Juego sin privilegios',
+      })
+      .expect(403);
+  });
+
+  it('no concede permisos administrativos a JWT sin grupos', async () => {
+    const token = firmarToken({
+      'cognito:groups': undefined,
+    });
+
+    await request(app.getHttpServer())
+      .get('/v1/licencias')
+      .set(
+        'Authorization',
+        `Bearer ${token}`,
+      )
+      .expect(403);
+  });
+
+  it('asigna jugador por defecto a grupos vacios', async () => {
+    const token = firmarToken({
+      'cognito:groups': [],
+    });
+
+    await request(app.getHttpServer())
+      .get('/v1/catalogo')
+      .set(
+        'Authorization',
+        `Bearer ${token}`,
+      )
+      .expect(200);
+  });
+
+  it('conserva grupos conocidos y descarta desconocidos', async () => {
+    const token = firmarToken({
+      'cognito:groups': [
+        'editores',
+        'grupo-externo',
+      ],
+    });
+
+    await request(app.getHttpServer())
+      .post('/v1/catalogo')
+      .set(
+        'Authorization',
+        `Bearer ${token}`,
+      )
+      .send({
+        titulo: 'Juego de editor valido',
+      })
+      .expect(201);
+  });
+
+  it('rechaza grupos exclusivamente desconocidos', async () => {
+    const token = firmarToken({
+      'cognito:groups': ['grupo-externo'],
+    });
+
+    await request(app.getHttpServer())
+      .post('/v1/catalogo')
+      .set(
+        'Authorization',
+        `Bearer ${token}`,
+      )
+      .send({
+        titulo: 'Juego de grupo desconocido',
+      })
+      .expect(403);
+  });
+
+  it('rechaza claim de grupos con formato incorrecto', async () => {
+    const token = firmarToken({
+      'cognito:groups': 'editores',
+    });
+
+    await request(app.getHttpServer())
+      .post('/v1/catalogo')
+      .set(
+        'Authorization',
+        `Bearer ${token}`,
+      )
+      .send({
+        titulo: 'Juego con claim invalido',
+      })
+      .expect(403);
+  });
+
+  it('ignora grupos efectivos inyectados en el JWT', async () => {
+    const token = firmarToken({
+      'cognito:groups': ['jugadores'],
+      gruposEfectivos: ['administradores'],
+    });
+
+    await request(app.getHttpServer())
+      .get('/v1/licencias')
+      .set(
+        'Authorization',
+        `Bearer ${token}`,
+      )
+      .expect(403);
+  });
+
   it('permite a editor crear juegos', async () => {
     const token = firmarToken({
       'cognito:groups': ['editores'],
