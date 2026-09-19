@@ -139,12 +139,15 @@ describe('ProxyService', () => {
     },
   );
 
-  it('conserva una respuesta HTTP si Axios la entrega como error', async () => {
+  it('conserva 409 LICENCIA_YA_EXISTE si Axios lo entrega como error', async () => {
     requestMock.mockReturnValue(
       throwError(() => ({
         response: {
           status: 409,
-          data: 'Conflicto',
+          data: {
+            statusCode: 409,
+            message: 'LICENCIA_YA_EXISTE',
+          },
         },
       })),
     );
@@ -152,12 +155,18 @@ describe('ProxyService', () => {
     await expect(
       service.forward(
         'http://localhost:3001',
-        '/v1/prueba',
-        'GET',
+        '/v1/compras',
+        'POST',
+        {
+          juegoId: 'juego-duplicado',
+        },
       ),
     ).resolves.toEqual({
       status: 409,
-      data: 'Conflicto',
+      data: {
+        statusCode: 409,
+        message: 'LICENCIA_YA_EXISTE',
+      },
     });
   });
 
@@ -182,6 +191,7 @@ describe('ProxyService', () => {
       const httpError = error as HttpException;
 
       expect(httpError.getStatus()).toBe(504);
+
       expect(httpError.getResponse()).toEqual({
         statusCode: 504,
         message: 'Gateway Timeout',
@@ -212,6 +222,7 @@ describe('ProxyService', () => {
       const httpError = error as HttpException;
 
       expect(httpError.getStatus()).toBe(502);
+
       expect(httpError.getResponse()).toEqual({
         statusCode: 502,
         message: 'Bad Gateway',
