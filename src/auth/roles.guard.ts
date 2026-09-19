@@ -5,6 +5,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import type { GrupoEfectivo } from './grupos-efectivos.js';
 import { ROLES_KEY } from './roles.decorator.js';
 
 @Injectable()
@@ -23,12 +24,13 @@ export class RolesGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest();
 
-    const gruposToken = Array.isArray(request.user?.['cognito:groups'])
-      ? request.user['cognito:groups']
-      : [];
+    const gruposEfectivos: GrupoEfectivo[] =
+      Array.isArray(request.user?.gruposEfectivos)
+        ? request.user.gruposEfectivos
+        : [];
 
     const autorizado = rolesRequeridos.some((rol) =>
-      gruposToken.includes(rol),
+      gruposEfectivos.includes(rol as GrupoEfectivo),
     );
 
     if (!autorizado) {

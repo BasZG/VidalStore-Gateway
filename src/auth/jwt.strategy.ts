@@ -9,6 +9,7 @@ import {
   Strategy,
 } from 'passport-jwt';
 import { passportJwtSecret } from 'jwks-rsa';
+import { obtenerGruposEfectivos } from './grupos-efectivos.js';
 
 const COGNITO_ISSUER_DEFAULT =
   'https://cognito-idp.us-east-1.amazonaws.com/us-east-1_kEQF95sY0';
@@ -67,6 +68,11 @@ export class JwtStrategy extends PassportStrategy(
       );
     }
 
-    return payload;
+    return {
+      ...payload,
+      gruposEfectivos: obtenerGruposEfectivos(
+        payload['cognito:groups'],
+      ),
+    };
   }
 }
